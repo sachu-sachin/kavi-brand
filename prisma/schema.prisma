@@ -1,0 +1,206 @@
+// Kavi Brand e-commerce schema (Prisma + MySQL)
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum UnitType {
+  G
+  KG
+  ML
+  L
+  PCS
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum RefundStatus {
+  NONE
+  REQUESTED
+  PROCESSED
+}
+
+enum CouponType {
+  PERCENT
+  FIXED
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Product {
+  id          String           @id @default(cuid())
+  name        String
+  slug        String           @unique
+  description String           @db.Text
+  brand       String           @default("Kavi")
+  image       String?
+  categoryId  String
+  category    Category         @relation(fields: [categoryId], references: [id])
+  featured    Boolean          @default(false)
+  active      Boolean          @default(true)
+  variants    ProductVariant[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([categoryId])
+  @@fulltext([name, description])
+}
+
+model ProductVariant {
+  id         String      @id @default(cuid())
+  productId  String
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku        String      @unique
+  unitValue  Int
+  unitType   UnitType
+  price      Decimal     @db.Decimal(10, 2)
+  salePrice  Decimal?    @db.Decimal(10, 2)
+  stock      Int         @default(0)
+  orderItems OrderItem[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@index([productId])
+}
+
+model Customer {
+  id        String    @id @default(cuid())
+  name      String
+  email     String    @unique
+  phone     String
+  addresses Address[]
+  orders    Order[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([phone])
+}
+
+model Address {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  line1      String
+  city       String
+  state      String
+  pincode    String
+  orders     Order[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([customerId])
+}
+
+model Order {
+  id                   String               @id @default(cuid())
+  customerId           String
+  customer             Customer             @relation(fields: [customerId], references: [id])
+  addressId            String?
+  address              Address?             @relation(fields: [addressId], references: [id])
+  total                Decimal              @db.Decimal(10, 2)
+  paymentStatus        PaymentStatus        @default(PENDING)
+  orderStatus          OrderStatus          @default(PENDING)
+  razorpayOrderId      String?              @unique
+  razorpayPaymentId    String?
+  refundStatus         RefundStatus         @default(NONE)
+  cancelReason         String?
+  reservationExpiresAt DateTime?
+  items                OrderItem[]
+  statusHistory        OrderStatusHistory[]
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  @@index([customerId])
+  @@index([addressId])
+  @@index([razorpayPaymentId])
+}
+
+model OrderItem {
+  id        String         @id @default(cuid())
+  orderId   String
+  order     Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variantId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+  qty       Int
+  price     Decimal        @db.Decimal(10, 2)
+
+  @@index([orderId])
+  @@index([variantId])
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(cuid())
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    OrderStatus
+  note      String?
+  changedAt DateTime    @default(now())
+
+  @@index([orderId])
+}
+
+model Coupon {
+  id         String     @id @default(cuid())
+  code       String     @unique
+  type       CouponType
+  value      Decimal    @db.Decimal(10, 2)
+  minAmount  Decimal?   @db.Decimal(10, 2)
+  startDate  DateTime?
+  expiry     DateTime?
+  active     Boolean    @default(true)
+  usageLimit Int?
+  usedCount  Int        @default(0)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+enum BannerPlacement {
+  HERO
+  ANNOUNCEMENT
+  PROMO
+  FESTIVE
+}
+
+model Banner {
+  id        String          @id @default(cuid())
+  placement BannerPlacement
+  eyebrow   String?
+  title     String?
+  subtitle  String?         @db.Text
+  image     String?
+  ctaLabel  String?
+  ctaHref   String?
+  active    Boolean         @default(true)
+  sortOrder Int             @default(0)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([placement, active])
+}

@@ -33,6 +33,7 @@ export type BannerDefaults = {
   ctaLabel: string;
   ctaHref: string;
   sortOrder: number;
+  showOverlay: boolean;
   active: boolean;
 };
 
@@ -192,15 +193,26 @@ export function BannerForm({
             </div>
           </div>
 
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              name="active"
-              defaultChecked={defaults?.active ?? true}
-              className="h-4 w-4"
-            />
-            Active (visible on the site)
-          </label>
+          <div className="space-y-3">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="active"
+                defaultChecked={defaults?.active ?? true}
+                className="h-4 w-4"
+              />
+              Active (visible on the site)
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="showOverlay"
+                defaultChecked={defaults?.showOverlay ?? false}
+                className="h-4 w-4"
+              />
+              Show text overlay on the image (hero banners)
+            </label>
+          </div>
         </CardContent>
       </Card>
 

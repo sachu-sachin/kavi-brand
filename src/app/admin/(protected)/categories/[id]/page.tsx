@@ -22,6 +22,8 @@ export default async function EditCategoryPage({
   const category = await prisma.category.findUnique({ where: { id } });
   if (!category) notFound();
 
+  const image = (category as { image?: string | null }).image ?? "";
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -43,6 +45,7 @@ export default async function EditCategoryPage({
           <CategoryForm
             action={updateCategory.bind(null, category.id)}
             defaultName={category.name}
+            defaultImage={image}
             submitLabel="Save changes"
           />
         </CardContent>

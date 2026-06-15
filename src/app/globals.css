@@ -172,3 +172,25 @@
     transition: none !important;
   }
 }
+
+/* ---- Floating spice/masala decor ---- */
+@keyframes kavi-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--kavi-rot, 0deg));
+  }
+  50% {
+    transform: translateY(-12px) rotate(var(--kavi-rot, 0deg));
+  }
+}
+
+.kavi-float {
+  animation: kavi-float 7s ease-in-out infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kavi-float {
+    animation: none;
+  }
+}

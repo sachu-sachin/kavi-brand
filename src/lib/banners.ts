@@ -11,6 +11,7 @@ export type BannerView = {
   image: string | null;
   ctaLabel: string | null;
   ctaHref: string | null;
+  showOverlay: boolean;
 };
 
 export function resolveBannerImage(image: string | null): string | null {
@@ -86,15 +87,26 @@ function fallback(id: string, data: Partial<BannerView>): BannerView {
     image: data.image ?? null,
     ctaLabel: data.ctaLabel ?? null,
     ctaHref: data.ctaHref ?? null,
+    showOverlay: data.showOverlay ?? false,
   };
 }
+
+type BannerRow = {
+  id: string;
+  eyebrow: string | null;
+  title: string | null;
+  subtitle: string | null;
+  image: string | null;
+  ctaLabel: string | null;
+  ctaHref: string | null;
+  showOverlay?: boolean | null;
+};
 
 type BannerDelegate = {
   findMany: (args: {
     where: { placement: string; active: boolean };
     orderBy: Array<Record<string, "asc" | "desc">>;
-    select: Record<string, boolean>;
-  }) => Promise<BannerView[]>;
+  }) => Promise<BannerRow[]>;
 };
 
 export async function getBanners(
@@ -107,19 +119,20 @@ export async function getBanners(
     const rows = await model.findMany({
       where: { placement, active: true },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-      select: {
-        id: true,
-        eyebrow: true,
-        title: true,
-        subtitle: true,
-        image: true,
-        ctaLabel: true,
-        ctaHref: true,
-      },
     });
 
     if (rows.length === 0) return DEFAULTS[placement];
-    return rows;
+
+    return rows.map((r) => ({
+      id: r.id,
+      eyebrow: r.eyebrow,
+      title: r.title,
+      subtitle: r.subtitle,
+      image: r.image,
+      ctaLabel: r.ctaLabel,
+      ctaHref: r.ctaHref,
+      showOverlay: Boolean(r.showOverlay),
+    }));
   } catch {
     return DEFAULTS[placement];
   }

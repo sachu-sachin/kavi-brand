@@ -24,6 +24,7 @@ const bannerSchema = z.object({
   ctaLabel: optionalString,
   ctaHref: optionalString,
   sortOrder: z.coerce.number().int().min(0, "Order cannot be negative."),
+  showOverlay: z.boolean(),
   active: z.boolean(),
 });
 
@@ -41,6 +42,7 @@ function parseForm(formData: FormData): ParseResult {
     ctaLabel: formData.get("ctaLabel"),
     ctaHref: formData.get("ctaHref"),
     sortOrder: formData.get("sortOrder") || 0,
+    showOverlay: formData.get("showOverlay") === "on",
     active: formData.get("active") === "on",
   });
 

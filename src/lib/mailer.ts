@@ -94,3 +94,37 @@ export async function sendOrderConfirmation(orderId: string): Promise<void> {
     console.error(`[mailer] Failed to send confirmation for ${orderId}:`, err);
   }
 }
+
+/**
+ * Sends a contact-form message to the store inbox. Returns whether it was
+ * actually delivered (false when SMTP isn't configured yet).
+ */
+export async function sendContactEmail(input: {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}): Promise<{ sent: boolean }> {
+  if (!isSmtpConfigured()) return { sent: false };
+  const to = process.env.SMTP_FROM ?? process.env.SMTP_USER;
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#1a1a1a;">
+      <h2 style="color:#8B0000;">New contact message</h2>
+      <p><strong>From:</strong> ${input.name} &lt;${input.email}&gt;</p>
+      <p><strong>Subject:</strong> ${input.subject || "(none)"}</p>
+      <p style="white-space:pre-line;border-top:1px solid #ddd;padding-top:12px;">${input.message}</p>
+    </div>`;
+  try {
+    await getTransporter().sendMail({
+      from: process.env.SMTP_FROM ?? process.env.SMTP_USER,
+      to,
+      replyTo: input.email,
+      subject: `[Contact] ${input.subject || "New message"}`,
+      html,
+    });
+    return { sent: true };
+  } catch (err) {
+    console.error("[mailer] Failed to send contact message:", err);
+    return { sent: false };
+  }
+}

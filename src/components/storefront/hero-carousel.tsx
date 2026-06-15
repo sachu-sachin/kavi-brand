@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -12,6 +12,7 @@ export type HeroSlide = {
   image: string | null; // already-resolved src, or null for gradient
   ctaLabel: string | null;
   ctaHref: string | null;
+  showOverlay: boolean;
 };
 
 const THEMES = [
@@ -32,11 +33,19 @@ const THEMES = [
   },
 ];
 
+const SWIPE_RATIO = 0.18; // fraction of width to trigger a slide change
+
 export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
 
+  const trackRef = useRef<HTMLDivElement>(null);
+  const dragStartX = useRef<number | null>(null);
+  const [dragPx, setDragPx] = useState(0);
+  const [dragging, setDragging] = useState(false);
+
   const count = slides.length;
+
   const next = useCallback(
     () => setIndex((i) => (i + 1) % Math.max(count, 1)),
     [count],
@@ -47,72 +56,131 @@ export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
   );
 
   useEffect(() => {
-    if (paused || count <= 1) return;
+    if (paused || dragging || count <= 1) return;
     const id = setInterval(next, 5500);
     return () => clearInterval(id);
-  }, [next, paused, count]);
+  }, [next, paused, dragging, count]);
+
+  function onPointerDown(e: React.PointerEvent) {
+    if (count <= 1) return;
+    dragStartX.current = e.clientX;
+    setDragging(true);
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+
+  function onPointerMove(e: React.PointerEvent) {
+    if (dragStartX.current === null) return;
+    setDragPx(e.clientX - dragStartX.current);
+  }
+
+  function endDrag() {
+    if (dragStartX.current === null) return;
+    const width = trackRef.current?.offsetWidth ?? 1;
+    const dx = dragPx;
+    if (dx < -width * SWIPE_RATIO) next();
+    else if (dx > width * SWIPE_RATIO) prev();
+    dragStartX.current = null;
+    setDragPx(0);
+    setDragging(false);
+  }
 
   if (count === 0) return null;
 
   return (
     <section
-      className="relative w-full overflow-hidden"
+      className="relative w-full overflow-hidden bg-[#2a2118]"
       aria-roledescription="carousel"
       aria-label="Featured promotions"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
       <div
-        className="kavi-carousel-track flex transition-transform duration-700 ease-out"
-        style={{ transform: `translateX(-${index * 100}%)` }}
+        ref={trackRef}
+        className={`flex ${
+          dragging
+            ? "cursor-grabbing"
+            : "cursor-grab transition-transform duration-700 ease-out"
+        }`}
+        style={{
+          transform: `translateX(calc(${-index * 100}% + ${
+            dragging ? dragPx : 0
+          }px))`,
+          touchAction: "pan-y",
+        }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
       >
         {slides.map((s, i) => {
           const theme = THEMES[i % THEMES.length];
+          const overlay = s.image && s.showOverlay;
+          const showContent = !s.image || s.showOverlay;
+
+          const content = (
+            <>
+              {s.eyebrow && (
+                <span
+                  className={`text-[0.7rem] font-bold uppercase tracking-[0.22em] sm:text-xs sm:tracking-[0.25em] ${
+                    s.image ? "text-brand-gold" : theme.accent
+                  }`}
+                >
+                  {s.eyebrow}
+                </span>
+              )}
+              {s.title && (
+                <h1 className="mt-3 max-w-2xl font-display text-3xl font-bold leading-[1.08] sm:text-4xl md:mt-4 md:text-6xl md:leading-[1.05]">
+                  {s.title}
+                </h1>
+              )}
+              {s.subtitle && (
+                <p className="mt-3 max-w-md text-sm text-white/85 sm:mt-5 md:text-base">
+                  {s.subtitle}
+                </p>
+              )}
+              {s.ctaLabel && (
+                <div className="mt-6 md:mt-8">
+                  <Link
+                    href={s.ctaHref || "/products"}
+                    draggable={false}
+                    className={`inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold shadow-lg shadow-black/10 transition-transform hover:scale-[1.03] sm:px-7 sm:py-3.5 ${theme.cta}`}
+                  >
+                    {s.ctaLabel} <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              )}
+            </>
+          );
+
           return (
             <div
               key={s.id}
               className={`relative w-full shrink-0 ${theme.bg}`}
               aria-hidden={i !== index}
             >
-              {s.image && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={s.image}
-                  alt=""
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
-              )}
-              <div className="relative mx-auto flex min-h-[460px] max-w-6xl flex-col justify-center px-6 py-16 text-white md:min-h-[540px] md:py-24">
-                {s.eyebrow && (
-                  <span
-                    className={`text-xs font-bold uppercase tracking-[0.25em] ${
-                      s.image ? "text-brand-gold" : theme.accent
-                    }`}
-                  >
-                    {s.eyebrow}
-                  </span>
-                )}
-                {s.title && (
-                  <h1 className="mt-4 max-w-2xl font-display text-4xl font-bold leading-[1.05] md:text-6xl">
-                    {s.title}
-                  </h1>
-                )}
-                {s.subtitle && (
-                  <p className="mt-5 max-w-md text-sm text-white/85 md:text-base">
-                    {s.subtitle}
-                  </p>
-                )}
-                {s.ctaLabel && (
-                  <div className="mt-8">
-                    <Link
-                      href={s.ctaHref || "/products"}
-                      className={`inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-semibold shadow-lg shadow-black/10 transition-transform hover:scale-[1.03] ${theme.cta}`}
-                    >
-                      {s.ctaLabel} <ArrowRight className="h-4 w-4" />
-                    </Link>
+              {s.image ? (
+                <>
+                  {/* Full banner image — fully visible & responsive on all screens */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={s.image}
+                    alt={s.title ?? "Promotional banner"}
+                    draggable={false}
+                    className="block w-full select-none object-contain"
+                  />
+                  {overlay && (
+                    <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/70 via-black/25 to-transparent p-6 text-white duration-700 animate-in fade-in md:p-12">
+                      {content}
+                    </div>
+                  )}
+                </>
+              ) : (
+                showContent && (
+                  <div className="mx-auto flex min-h-[340px] max-w-6xl flex-col justify-center px-6 py-12 text-white duration-700 animate-in fade-in slide-in-from-bottom-4 sm:min-h-[420px] md:min-h-[520px] md:py-24">
+                    {content}
                   </div>
-                )}
-              </div>
+                )
+              )}
             </div>
           );
         })}
@@ -137,7 +205,7 @@ export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
             <ChevronRight className="h-5 w-5" />
           </button>
 
-          <div className="absolute bottom-5 left-1/2 flex -translate-x-1/2 items-center gap-2">
+          <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 md:bottom-5">
             {slides.map((s, i) => (
               <button
                 key={s.id}

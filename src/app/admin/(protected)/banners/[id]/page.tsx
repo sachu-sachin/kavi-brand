@@ -41,6 +41,8 @@ export default async function EditBannerPage({
           ctaLabel: banner.ctaLabel ?? "",
           ctaHref: banner.ctaHref ?? "",
           sortOrder: banner.sortOrder,
+          showOverlay:
+            (banner as { showOverlay?: boolean }).showOverlay ?? false,
           active: banner.active,
         }}
       />

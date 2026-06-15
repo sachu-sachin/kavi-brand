@@ -49,6 +49,7 @@ model Category {
   id        String    @id @default(cuid())
   name      String
   slug      String    @unique
+  image     String?
   products  Product[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -197,10 +198,30 @@ model Banner {
   image     String?
   ctaLabel  String?
   ctaHref   String?
+  showOverlay Boolean       @default(false)
   active    Boolean         @default(true)
   sortOrder Int             @default(0)
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
 
   @@index([placement, active])
+}
+
+model SiteSetting {
+  id           String   @id @default("main")
+  companyName  String   @default("Kavi Foods")
+  tagline      String?  @db.Text
+  logo         String?
+  email        String?
+  phone        String?
+  address      String?  @db.Text
+  facebook     String?
+  instagram    String?
+  whatsapp     String?
+  youtube      String?
+  twitter      String?
+  fssaiNumber  String?
+  certificates Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }

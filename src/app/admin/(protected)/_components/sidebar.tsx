@@ -9,6 +9,7 @@ import {
   Tags,
   Images,
   ShoppingCart,
+  Settings,
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -21,6 +22,7 @@ const links = [
   { href: "/admin/categories", label: "Categories", icon: Tags },
   { href: "/admin/banners", label: "Banners", icon: Images },
   { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
+  { href: "/admin/settings", label: "Company details", icon: Settings },
 ];
 
 export function Sidebar({ email }: { email: string }) {

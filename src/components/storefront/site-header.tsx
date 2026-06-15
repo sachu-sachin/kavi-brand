@@ -1,32 +1,47 @@
 import Link from "next/link";
-import Image from "next/image";
-import { Search } from "lucide-react";
 import { SearchBar } from "./search-bar";
 import { CartButton } from "./cart-button";
-
-type Category = { id: string; name: string; slug: string };
+import { MobileMenu } from "./mobile-menu";
+import type { SiteSettings } from "@/lib/settings";
 
 const MENU = [
   { href: "/", label: "Home" },
   { href: "/products", label: "Shop" },
-  { href: "#", label: "About Us" },
-  { href: "#", label: "Contact" },
-  { href: "#", label: "Track Order" },
+  { href: "/about", label: "About Us" },
+  { href: "/contact", label: "Contact" },
+  { href: "/track-order", label: "Track Order" },
 ];
 
-// `categories` is accepted for API compatibility with the layout but the
-// category links now live on the home page (under the features section).
-export function SiteHeader({}: { categories?: Category[] }) {
+function Logo({ settings }: { settings: SiteSettings }) {
+  return settings.logo ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={settings.logo} alt={settings.companyName} className="h-8 w-auto" />
+  ) : (
+    <span className="font-display text-2xl font-bold text-brand-red">
+      {settings.companyName}
+    </span>
+  );
+}
+
+export function SiteHeader({ settings }: { settings: SiteSettings }) {
   return (
     <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4 sm:px-6">
-        {/* Logo */}
-        <Link href="/" className="flex shrink-0 items-center gap-2">
-          <Image src="/logo.png" alt="Kavi Foods Logo" width={40} height={40} className="h-8 w-auto" priority />
+      <div className="relative mx-auto flex h-16 max-w-6xl items-center px-4 sm:px-6">
+        {/* Mobile: hamburger (left) */}
+        <div className="flex items-center md:hidden">
+          <MobileMenu companyName={settings.companyName} />
+        </div>
+
+        {/* Logo: centered on mobile, left on desktop */}
+        <Link
+          href="/"
+          className="absolute left-1/2 flex -translate-x-1/2 items-center gap-2 md:static md:left-auto md:translate-x-0"
+        >
+          <Logo settings={settings} />
         </Link>
 
-        {/* Primary menu */}
-        <nav className="hidden items-center gap-1 md:flex">
+        {/* Desktop primary menu */}
+        <nav className="ml-6 hidden items-center gap-1 md:flex">
           {MENU.map((m) => (
             <Link
               key={m.label}
@@ -38,16 +53,9 @@ export function SiteHeader({}: { categories?: Category[] }) {
           ))}
         </nav>
 
-        {/* Right side: search + cart */}
+        {/* Right: search (desktop) + cart */}
         <div className="ml-auto flex items-center gap-2">
           <SearchBar className="hidden w-56 lg:block" />
-          <Link
-            href="/search"
-            aria-label="Search"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full text-foreground transition-colors hover:bg-muted lg:hidden"
-          >
-            <Search className="h-5 w-5" />
-          </Link>
           <CartButton />
         </div>
       </div>
